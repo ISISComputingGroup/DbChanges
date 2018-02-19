@@ -35,6 +35,8 @@ def main():
                         help="Git branch name for the old release to compare against.")
     parser.add_argument("--new", required=True, type=str,
                         help="Git branch name for the new release to compare.")
+    parser.add_argument("--clean", required=False, type=bool, default=False,
+                        help="Get a fresh checkout of the EPICS repo (takes significantly longer)")
 
     args = parser.parse_args()
 
@@ -42,13 +44,19 @@ def main():
         print("Can't check for changes if old = new")
         sys.exit(1)
 
-    try:
-        clone_repos(TEMP_DIR, [args.old, args.new])
-        six.moves.input("input")
-        check_dbs(args.old, args.new)
-    finally:
-        if False:
-            delete_temp_dir()
+    if args.clean:
+        delete_temp_dir()
+
+    clone_repos(TEMP_DIR, [args.old, args.new])
+    removed, changed = check_dbs(args.old, args.new)
+
+    print("------------")
+    print("Removed DBs:")
+    print("\n".join(removed))
+    print("------------")
+    print("Modified DBs:")
+    print("\n".join(changed))
+    print("------------")
 
 
 if __name__ == "__main__":
