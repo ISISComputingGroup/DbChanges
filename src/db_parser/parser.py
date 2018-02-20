@@ -129,7 +129,8 @@ class Parser(object):
              value of the alias
         """
         self.consume(TokenTypes.ALIAS)
-        return self.value()
+        with self.bracket_delimited_block():
+            return self.value()
 
     def record(self):
         """
@@ -138,6 +139,8 @@ class Parser(object):
             record(ai, "$(P)RECORDNAME") {
                 field(PINI, "YES")
                 field(VAL, "0")
+                info(alarm, "SIMPLE_01")
+                alias("$(P)ALIASRECORDNAME")
             }
         Returns:
             dict:
@@ -145,6 +148,7 @@ class Parser(object):
                 "name": record name, e.g. "$(P)RECORDNAME"
                 "fields": list of fields. Each item in the list is a (key, value) tuple
                 "infos": list of info fields. Each item in the list is a (key, value) tuple
+                "aliases": list of record names aliased to this record
         """
         fields = []
         infos = []
@@ -191,11 +195,9 @@ class Parser(object):
             elif self.current_token.type == TokenTypes.ALIAS:
                 pv, alias = self.alias()
                 for rec in records:
-                    if rec["name"] == pv:
+                    if pv == rec["name"] or pv in rec["aliases"]:
                         rec["aliases"].append(alias)
                         break
-                else:
-                    self.raise_error("Alias {} points at a non-existent record {}".format(alias, pv))
             else:
                 self.raise_error("Expected record or alias")
         return records

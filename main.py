@@ -5,7 +5,7 @@ import os
 import sys
 
 from src.constants import RELEASES_DIR
-from src.db_iterators import DbIterator
+from src.db_iterators import DbChangesIterator
 
 
 def main():
@@ -25,10 +25,11 @@ def main():
         print("Invalid release given. Valid releases are: {}".format(", ".join(valid_releases)))
         sys.exit(1)
 
-    db_iterator = DbIterator(os.path.join(RELEASES_DIR, args.old), os.path.join(RELEASES_DIR, args.new))
+    db_iterator = DbChangesIterator(os.path.join(RELEASES_DIR, args.old), os.path.join(RELEASES_DIR, args.new))
 
     for change in db_iterator.change_descriptions():
         print(change)
+        print("\n-----\n")
 
 
 if __name__ == "__main__":

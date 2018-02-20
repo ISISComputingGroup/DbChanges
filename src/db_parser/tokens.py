@@ -7,6 +7,7 @@ class TokenTypes(object):
     FIELD = "FIELD"
     INFO = "INFO"
     ALIAS = "ALIAS"
+    INCLUDE = "INCLUDE"
 
     # Delimeters, separators
     L_BRACKET = "L_BRACKET"
