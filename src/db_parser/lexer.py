@@ -1,10 +1,9 @@
 import re
+import six
 from collections import OrderedDict
 
-import six
-
-from db_parser.common import DbSyntaxError
-from db_parser.tokens import TokenTypes
+from src.db_parser.tokens import TokenTypes
+from src.db_parser.common import DbSyntaxError
 
 
 class Token(object):
@@ -72,8 +71,8 @@ class Lexer(six.Iterator):
         (r"(\s+)",                  TokenTypes.WHITESPACE),
     ])
 
-    def __init__(self, filepath):
-        self.filepath = filepath
+    def __init__(self, file_contents):
+        self.file_contents = file_contents
         self.gen = None
 
     def token_generator(self):
@@ -82,23 +81,22 @@ class Lexer(six.Iterator):
         yields:
             Tokens corresponding to the lexed input.
         """
-        with open(self.filepath) as f:
-            lines = f.readlines()
-            for linenum, line in enumerate(lines, 1):
-                line = line.strip()
-                column = 0
-                while column < len(line):
-                    for regexp in Lexer.TOKEN_MAPPING:
-                        match_text = self._text_matches_regex(line[column:], regexp)
-                        if match_text is not None:
-                            column += len(match_text)
-                            yield Token(Lexer.TOKEN_MAPPING[regexp], linenum, column, match_text)
-                            break
-                    else:
-                        raise DbSyntaxError("No matching rules found at {}:{}. Line contents: '{}'"
-                                            .format(linenum, column, line))
+        lines = self.file_contents.split("\n")
+        for linenum, line in enumerate(lines, 1):
+            line = line.strip()
+            column = 0
+            while column < len(line):
+                for regexp in Lexer.TOKEN_MAPPING:
+                    match_text = self._text_matches_regex(line[column:], regexp)
+                    if match_text is not None:
+                        column += len(match_text)
+                        yield Token(Lexer.TOKEN_MAPPING[regexp], linenum, column, match_text)
+                        break
+                else:
+                    raise DbSyntaxError("No matching rules found at {}:{}. Line contents: '{}'"
+                                        .format(linenum, column, line))
 
-            yield Token(TokenTypes.EOF, len(lines), len(lines[len(lines)-1]))
+        yield Token(TokenTypes.EOF, len(lines), len(lines[len(lines)-1]))
 
     def __next__(self):
         """

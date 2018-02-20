@@ -1,10 +1,8 @@
+import six
 from contextlib import contextmanager
 
-import six
-
-from db_parser.common import DbSyntaxError
-from db_parser.lexer import Lexer
-from db_parser.tokens import TokenTypes
+from src.db_parser.tokens import TokenTypes
+from src.db_parser.common import DbSyntaxError
 
 
 class Parser(object):
@@ -122,6 +120,17 @@ class Parser(object):
         self.consume(TokenTypes.INFO)
         return self.key_value_pair()
 
+    def alias_field(self):
+        """
+        Handler for an EPICS alias within a DB record
+        Example:
+            alias("$(P)RECORD1")
+        Returns:
+             value of the alias
+        """
+        self.consume(TokenTypes.ALIAS)
+        return self.value()
+
     def record(self):
         """
         Handler for an EPICS DB record.
@@ -139,6 +148,7 @@ class Parser(object):
         """
         fields = []
         infos = []
+        aliases = []
 
         self.consume(TokenTypes.RECORD)
         record_type, record_name = self.key_value_pair()
@@ -149,14 +159,16 @@ class Parser(object):
                     fields.append(self.field())
                 elif self.current_token.type == TokenTypes.INFO:
                     infos.append(self.info())
+                elif self.current_token.type == TokenTypes.ALIAS:
+                    aliases.append(self.alias_field())
                 else:
-                    self.raise_error("Expected info or field")
+                    self.raise_error("Expected info, field or alias")
 
-        return {"type": record_type, "name": record_name, "fields": fields, "infos": infos}
+        return {"type": record_type, "name": record_name, "fields": fields, "infos": infos, "aliases": aliases}
 
     def alias(self):
         """
-        Handler for an EPICS alias.
+        Handler for an EPICS alias (DB level).
         Example:
             alias("$(P)RECORD1", "$(P)RECORD2")
         Returns:
@@ -173,16 +185,17 @@ class Parser(object):
             aliases is a collection of key-value tuples.
         """
         records = []
-        aliases = []
         while self.current_token.type != TokenTypes.EOF:
             if self.current_token.type == TokenTypes.RECORD:
                 records.append(self.record())
             elif self.current_token.type == TokenTypes.ALIAS:
-                aliases.append(self.alias())
+                pv, alias = self.alias()
+                for rec in records:
+                    if rec["name"] == pv:
+                        rec["aliases"].append(alias)
+                        break
+                else:
+                    self.raise_error("Alias {} points at a non-existent record {}".format(alias, pv))
             else:
                 self.raise_error("Expected record or alias")
-        return records, aliases
-
-
-db = Parser(Lexer("test.db")).db()
-print(db)
+        return records

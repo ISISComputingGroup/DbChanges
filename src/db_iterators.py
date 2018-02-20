@@ -1,5 +1,7 @@
 import os
 
+from src.db_parser.common import parse_db_from_filepath
+
 
 class DbIterator(object):
     INTERESTING_FILE_TYPES = [".db", ".template"]
@@ -26,15 +28,18 @@ class DbIterator(object):
                 with open(os.path.join(self.old_path, db)) as old_file, \
                         open(os.path.join(self.new_path, db)) as new_file:
                     if old_file.readlines() != new_file.readlines():
+                        print("Parsing {}".format(os.path.join(self.old_path, db)))
+                        db = parse_db_from_filepath(os.path.join(self.old_path, db))
+                        print(db)
                         yield db
 
     def change_descriptions(self):
-        for db in self.deleted_dbs():
-            yield "A DB file was deleted from {}".format(db)
-
         for db in self.modified_dbs():
             yield "A DB file was modified at {}. Changes:\n    {}"\
                 .format(db, "\n    ".join(self.change_details(db)))
+
+        for db in self.deleted_dbs():
+            yield "A DB file was deleted from {}".format(db)
 
     def change_details(self, rec):
         return ["record blah removed", "record blah added", "record blah2 added"]

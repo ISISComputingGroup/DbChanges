@@ -4,8 +4,8 @@ import argparse
 import os
 import sys
 
-from constants import RELEASES_DIR
-from db_iterators import DbIterator
+from src.constants import RELEASES_DIR
+from src.db_iterators import DbIterator
 
 
 def main():
