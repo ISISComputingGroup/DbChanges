@@ -1,0 +1,188 @@
+from contextlib import contextmanager
+
+import six
+
+from db_parser.common import DbSyntaxError
+from db_parser.lexer import Lexer
+from db_parser.tokens import TokenTypes
+
+
+class Parser(object):
+    """
+    Main db_parser. Takes input tokens from the given lexer and builds an EPICS DB out of them.
+    """
+    def __init__(self, lexer):
+        self.lexer = lexer
+        self.current_token = None
+        self.next_token()
+
+    def next_token(self):
+        """
+        Call to advance the lexer by one token.
+        """
+        try:
+            # Ignore macros and comments wherever they occur
+            self.current_token = six.advance_iterator(self.lexer)
+        except StopIteration:
+            self.raise_error("Next token was requested, but none exists.")
+
+    def consume(self, token_type):
+        """
+        Verifies that the lexer's current token is of the given type, and then advances the lexer by one token.
+        Args:
+            token_type: the expected type of the current token.
+        """
+        if self.current_token.type == token_type:
+            value = self.current_token.contents
+            self.next_token()
+            return value
+        else:
+            self.raise_error("Expected '{}'.".format(token_type))
+
+    def raise_error(self, message):
+        """
+        Error function if an unexpected token was encountered. Line numbers and current token information will be added.
+        Args:
+            A message to add to the error
+        """
+        raise DbSyntaxError("Unexpected token '{}' encountered at {}:{}: {}"
+                            .format(self.current_token, self.current_token.line, self.current_token.col, message))
+
+    @contextmanager
+    def delimited_block(self, start, end):
+        """
+        Context manager to surround a given block with a given start and end token.
+        """
+        self.consume(start)
+        yield
+        self.consume(end)
+
+    def bracket_delimited_block(self):
+        """
+        Context manager to surround a block with brackets
+        """
+        return self.delimited_block(start=TokenTypes.L_BRACKET, end=TokenTypes.R_BRACKET)
+
+    def brace_delimited_block(self):
+        """
+        Context manager to surround a block with braces
+        """
+        return self.delimited_block(start=TokenTypes.L_BRACE, end=TokenTypes.R_BRACE)
+
+    def value(self):
+        """
+        Handler for values which are allowed to be quoted or not.
+        Examples:
+            HELLO
+            "HELLO"
+        Returns:
+            The value with quotes stripped (if applicable)
+        """
+        if self.current_token.type == TokenTypes.QUOTED_STRING:
+            return self.consume(TokenTypes.QUOTED_STRING)[1:-1]  # Strip quotes
+        elif self.current_token.type == TokenTypes.LITERAL:
+            return self.consume(TokenTypes.LITERAL)
+        else:
+            self.raise_error("Expected either a literal or a string literal.")
+
+    def key_value_pair(self):
+        """
+        Handler for key value pairs surrounded by brackets. Both the key and value are allowed to be quoted or not.
+        Examples:
+            (ONVL, "1")
+            ("HELLO", bonjour)
+        Returns:
+            tuple of (key, value)
+        """
+        with self.bracket_delimited_block():
+            key = self.value()
+            self.consume(TokenTypes.COMMA)
+            value = self.value()
+        return key, value
+
+    def field(self):
+        """
+        Handler for an EPICS DB field.
+        Examples:
+             field(PINI, "YES")
+        Returns:
+            tuple of (key, value)
+        """
+        self.consume(TokenTypes.FIELD)
+        return self.key_value_pair()
+
+    def info(self):
+        """
+        Handler for an EPICS DB info field.
+        Examples:
+             info(alarm, "SIMPLE_01")
+        Returns:
+            tuple of (key, value)
+        """
+        self.consume(TokenTypes.INFO)
+        return self.key_value_pair()
+
+    def record(self):
+        """
+        Handler for an EPICS DB record.
+        Example:
+            record(ai, "$(P)RECORDNAME") {
+                field(PINI, "YES")
+                field(VAL, "0")
+            }
+        Returns:
+            dict:
+                "type": record type, e.g. "ai"
+                "name": record name, e.g. "$(P)RECORDNAME"
+                "fields": list of fields. Each item in the list is a (key, value) tuple
+                "infos": list of info fields. Each item in the list is a (key, value) tuple
+        """
+        fields = []
+        infos = []
+
+        self.consume(TokenTypes.RECORD)
+        record_type, record_name = self.key_value_pair()
+
+        with self.brace_delimited_block():
+            while self.current_token.type != TokenTypes.R_BRACE:
+                if self.current_token.type == TokenTypes.FIELD:
+                    fields.append(self.field())
+                elif self.current_token.type == TokenTypes.INFO:
+                    infos.append(self.info())
+                else:
+                    self.raise_error("Expected info or field")
+
+        return {"type": record_type, "name": record_name, "fields": fields, "infos": infos}
+
+    def alias(self):
+        """
+        Handler for an EPICS alias.
+        Example:
+            alias("$(P)RECORD1", "$(P)RECORD2")
+        Returns:
+             tuple of (record1, record2)
+        """
+        self.consume(TokenTypes.ALIAS)
+        return self.key_value_pair()
+
+    def db(self):
+        """
+        Top-level handler for an EPICS DB. A db is described as being a collection of records and aliases.
+        Returns:
+            tuple of (records, aliases), where records is a collection of record objects (see format in record()) and
+            aliases is a collection of key-value tuples.
+        """
+        records = []
+        aliases = []
+        while self.current_token.type != TokenTypes.EOF:
+            if self.current_token.type == TokenTypes.RECORD:
+                records.append(self.record())
+            elif self.current_token.type == TokenTypes.ALIAS:
+                aliases.append(self.alias())
+            else:
+                self.raise_error("Expected record or alias")
+        return records, aliases
+
+
+db = Parser(Lexer("test.db")).db()
+print(db)
