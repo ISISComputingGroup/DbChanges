@@ -41,7 +41,7 @@ class Parser(object):
         """
         Error function if an unexpected token was encountered. Line numbers and current token information will be added.
         Args:
-            A message to add to the error
+            message: A message to add to the error
         """
         if self.current_token is None:
             raise DbSyntaxError("No tokens found.")
@@ -53,6 +53,9 @@ class Parser(object):
     def delimited_block(self, start, end):
         """
         Context manager to surround a given block with a given start and end token.
+        Args:
+            start: The type of token to expect at the start of the block
+            end: The type of token to expect at the end of the block
         """
         self.consume(start)
         yield
@@ -115,7 +118,7 @@ class Parser(object):
     def info(self):
         """
         Handler for an EPICS DB info field.
-        Examples:
+        Example:
              info(alarm, "SIMPLE_01")
         Returns:
             tuple of (key, value)
@@ -186,10 +189,9 @@ class Parser(object):
 
     def db(self):
         """
-        Top-level handler for an EPICS DB. A db is described as being a collection of records and aliases.
+        Top-level handler for an EPICS DB. A db is described as being a collection of records.
         Returns:
-            tuple of (records, aliases), where records is a collection of record objects (see format in record()) and
-            aliases is a collection of key-value tuples.
+            List of records, aliases where each record follows the format described in  record()
         """
         records = []
         while self.current_token.type != TokenTypes.EOF:
@@ -197,6 +199,8 @@ class Parser(object):
                 records.append(self.record())
             elif self.current_token.type == TokenTypes.ALIAS:
                 pv, alias = self.alias()
+                # Find the record that this alias belongs to, and add the alias to it.
+                # Don't error if we can't find the record that it belongs to - it might be in another DB
                 for rec in records:
                     if pv == rec["name"] or pv in rec["aliases"]:
                         rec["aliases"].append(alias)
