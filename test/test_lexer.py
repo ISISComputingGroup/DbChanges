@@ -128,7 +128,7 @@ class LexerTests(unittest.TestCase):
 
         self.assertListEqual(tokens, expected_tokens)
 
-    def test_WHEN_lexer_lexes_an_empty_quoted_string_THEN_returns_a_single_quoted_string_token(self):
+    def test_WHEN_lexer_lexes_an_empty_quoted_string_THEN_returns_a_quoted_string_token(self):
         tokens = get_tokens_list(Lexer(r'""'))
 
         expected_tokens = [
