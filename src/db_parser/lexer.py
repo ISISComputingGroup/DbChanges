@@ -124,7 +124,7 @@ class Lexer(six.Iterator):
             self.gen = self.token_generator()
 
         tok = next(self.gen)
-        while tok.type in [TokenTypes.WHITESPACE, TokenTypes.COMMENT, TokenTypes.MACRO]:
+        while tok.type in self.IGNORED_TOKENS:
             tok = next(self.gen)
         return tok
 
