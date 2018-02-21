@@ -1,14 +1,9 @@
 import os
 import unittest
-
-from xmlrunner import xmlrunner
-
-
-def main():
-    loader = unittest.TestLoader()
-    suite = loader.discover(os.path.dirname(os.path.abspath(__file__)))
-    xmlrunner.XMLTestRunner(output="test-reports").run(suite)
+import sys
+import xmlrunner
 
 
 if __name__ == "__main__":
-    main()
+    suite = unittest.TestLoader().discover(os.path.dirname(os.path.abspath(__file__)))
+    sys.exit(0 if xmlrunner.XMLTestRunner(output="test-reports").run(suite).wasSuccessful() else 1)

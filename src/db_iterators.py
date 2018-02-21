@@ -1,6 +1,8 @@
 import os
 
-from src.db_parser.common import parse_db_from_filepath, DbSyntaxError
+from src.db_parser.common import DbSyntaxError
+from src.db_parser.lexer import Lexer
+from src.db_parser.parser import Parser
 
 INTERESTING_FILE_TYPES = [".db"]
 
@@ -21,6 +23,11 @@ INTERESTING_DIRECTORIES = [
     os.path.join("EPICS", "ISIS"),
     os.path.join("EPICS", "support"),
 ]
+
+
+def parse_db_from_filepath(filepath):
+    with open(filepath) as f:
+        return Parser(Lexer(f.read())).db()
 
 
 class DbChangesIterator(object):
