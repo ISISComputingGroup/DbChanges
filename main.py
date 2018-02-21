@@ -19,7 +19,8 @@ def main():
 
     args = parser.parse_args()
 
-    valid_releases = os.listdir(RELEASES_DIR)
+    # Filter to only include releases where we built an EPICS version (i.e. not client-only hotfixes)
+    valid_releases = [p for p in os.listdir(RELEASES_DIR) if os.path.exists(os.path.join(RELEASES_DIR, p, "EPICS"))]
 
     if any(arg not in valid_releases for arg in (args.new, args.old)):
         print("Invalid release given. Valid releases are: {}".format(", ".join(valid_releases)))
