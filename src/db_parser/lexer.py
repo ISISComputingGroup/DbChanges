@@ -107,8 +107,8 @@ class Lexer(six.Iterator):
                 for regexp in Lexer.TOKEN_MAPPING:
                     match_text = self._text_matches_regex(line[column:], regexp)
                     if match_text is not None:
-                        column += len(match_text)
                         yield Token(Lexer.TOKEN_MAPPING[regexp], linenum, column, match_text)
+                        column += len(match_text)
                         break
                 else:
                     raise DbSyntaxError("No matching rules found at {}:{}. Line contents: '{}'"
