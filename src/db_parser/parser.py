@@ -43,8 +43,11 @@ class Parser(object):
         Args:
             A message to add to the error
         """
-        raise DbSyntaxError("Unexpected token '{}' encountered at {}:{}: {}"
-                            .format(self.current_token, self.current_token.line, self.current_token.col, message))
+        if self.current_token is None:
+            raise DbSyntaxError("No tokens found.")
+        else:
+            raise DbSyntaxError("Unexpected token '{}' encountered at {}:{}: {}"
+                                .format(self.current_token, self.current_token.line, self.current_token.col, message))
 
     @contextmanager
     def delimited_block(self, start, end):

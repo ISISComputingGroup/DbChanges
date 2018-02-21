@@ -25,6 +25,8 @@ class Token(object):
     def __str__(self):
         return "{} (contents={})".format(self.type, self.contents)
 
+    __repr__ = __str__
+
     def __eq__(self, other):
         try:
             return self.type == other.type

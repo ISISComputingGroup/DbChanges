@@ -1,7 +1,4 @@
-import difflib
 import os
-
-import shutil
 
 from src.db_parser.common import parse_db_from_filepath, DbSyntaxError
 
@@ -29,10 +26,18 @@ INTERESTING_DIRECTORIES = [
 class DbChangesIterator(object):
 
     def __init__(self, old_path, new_path):
+        """
+        Args:
+            old_path: The path to the old release to be compared
+            new_path: The path to the new release to be compared
+        """
         self.old_path = old_path
         self.new_path = new_path
 
     def dbs_in_old_path(self):
+        """
+        Generator that returns all the DB files in self.old_path/{INTERESTING_DIRECTORIES}
+        """
         for directory in INTERESTING_DIRECTORIES:
             for root, dirs, files in os.walk(os.path.join(self.old_path, directory)):
                 dirs[:] = [d for d in dirs if d not in DIRECTORIES_TO_ALWAYS_IGNORE]
@@ -42,11 +47,17 @@ class DbChangesIterator(object):
                         yield os.path.relpath(p, start=self.old_path)
 
     def deleted_dbs(self):
+        """
+        Generator that returns DBs that were removed from old_version to new_version
+        """
         for db in self.dbs_in_old_path():
             if not os.path.exists(os.path.join(self.new_path, db)):
                 yield db
 
     def modified_dbs(self):
+        """
+        Generator that returns DBs that were modified between old_version to new_version
+        """
         for db in self.dbs_in_old_path():
             if os.path.exists(os.path.join(self.new_path, db)):
                 with open(os.path.join(self.old_path, db)) as old_file, \
@@ -55,13 +66,28 @@ class DbChangesIterator(object):
                         yield db
 
     def change_descriptions(self):
+        """
+        Generator that returns string descriptions of the changes for each database.
+
+        This only returns changes where something *was* present in the API of the old database but is no longer present.
+        It does not generate "changes" if functionality has only been added.
+        """
         for db in self.modified_dbs():
-            yield self._diff_dbs_by_path(db)
+            diff = self._diff_dbs_by_path(db)
+            if diff is not None:
+                yield self._diff_dbs_by_path(db)
 
         for db in self.deleted_dbs():
             yield "A DB file was deleted from {}".format(db)
 
     def _diff_dbs_by_path(self, db_path):
+        """
+        Finds the API differences between two DB files given a relative path.
+        Args:
+            db_path: The relative path from self.old_path or self.new_path to the DB file to diff.
+        Returns:
+            String describing the API differences, or None if there were no API differences.
+        """
         old_path = os.path.join(self.old_path, db_path)
         new_path = os.path.join(self.new_path, db_path)
 
@@ -82,7 +108,7 @@ class DbChangesIterator(object):
             return "DBs at '{}' and '{}' are different.\n  - {}"\
                 .format(old_path, new_path, "\n  - ".join(db_differences))
         else:
-            return "DBs at '{}' and '{}' are different, but previous API not changed".format(old_path, new_path)
+            return None  # API unchanged
 
     def _diff_dbs(self, old_db, new_db):
         """
@@ -93,10 +119,10 @@ class DbChangesIterator(object):
         differences = []
         for old_rec in old_db:
             for r in new_db:
-                if old_rec["name"] == r["name"]:
+                if old_rec["name"] == r["name"]:  # Find a record in the new db with the same name as the old record.
                     differences.extend(self._diff_records(old_rec, r))
                     break
-            else:
+            else:  # Record with the same name was not found
                 differences.append("Record removed: {}".format(old_rec["name"]))
 
         return differences
@@ -110,11 +136,12 @@ class DbChangesIterator(object):
         differences = []
         for old_name, old_value in old_record["fields"]:
             for new_name, new_value in new_record["fields"]:
-                if new_name == old_name:
+                if new_name == old_name:  # Find a field in the new record with the same name as the old field.
                     if new_value != old_value:
                         differences.append("Field '{}' in record '{}' changed from '{}' to '{}'"
                                            .format(old_name, old_record["name"], old_value, new_value))
                     break
-            else:
-                differences.append("Field removed from record '{}': {}".format(old_record["name"], old_name))
+            else:  # Field with the same name not found
+                differences.append("Field '{}' removed from '{}'".format(old_name, old_record["name"]))
+
         return differences
