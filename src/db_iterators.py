@@ -25,12 +25,10 @@ INTERESTING_DIRECTORIES = [
 ]
 
 
-def parse_db_from_filepath(filepath):
-    with open(filepath) as f:
-        return Parser(Lexer(f.read())).db()
-
-
 class DbChangesIterator(object):
+    """
+    Contains iterators over DB files or differences between them.
+    """
 
     def __init__(self, old_path, new_path):
         """
@@ -40,6 +38,11 @@ class DbChangesIterator(object):
         """
         self.old_path = old_path
         self.new_path = new_path
+
+    @staticmethod
+    def parse_db_from_filepath(filepath):
+        with open(filepath) as f:
+            return Parser(Lexer(f.read())).db()
 
     def dbs_in_old_path(self):
         """
@@ -99,12 +102,12 @@ class DbChangesIterator(object):
         new_path = os.path.join(self.new_path, db_path)
 
         try:
-            old_db = parse_db_from_filepath(old_path)
+            old_db = DbChangesIterator.parse_db_from_filepath(old_path)
         except DbSyntaxError as e:
             return "Unable to parse db at {} because: {} {}".format(old_path, e.__class__.__name__, e)
 
         try:
-            new_db = parse_db_from_filepath(new_path)
+            new_db = DbChangesIterator.parse_db_from_filepath(new_path)
         except DbSyntaxError as e:
             return "Unable to parse db at {} because: {} {}".format(new_path, e.__class__.__name__, e)
 

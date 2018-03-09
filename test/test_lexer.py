@@ -160,3 +160,47 @@ class LexerTests(unittest.TestCase):
         ]
 
         self.assertListEqual(tokens, expected_tokens)
+
+    def test_GIVEN_content_on_multiple_lines_WHEN_lexed_THEN_line_numbers_are_correct(self):
+
+        content = """
+        
+        record"""
+
+        tokens = get_tokens_list(Lexer(content))
+
+        expected_tokens = [
+            token_from_type(TokenTypes.RECORD),
+            token_from_type(TokenTypes.EOF),
+        ]
+
+        self.assertListEqual(tokens, expected_tokens)
+
+        self.assertEqual(tokens[0].line, 3)  # The record token should be on line 3
+
+    def test_GIVEN_content_WHEN_lexed_THEN_column_number_is_correct(self):
+        indentation_level = 4
+        tokens = get_tokens_list(Lexer("{}record".format(" " * indentation_level)))
+
+        expected_tokens = [
+            token_from_type(TokenTypes.RECORD),
+            token_from_type(TokenTypes.EOF),
+        ]
+
+        self.assertListEqual(tokens, expected_tokens)
+
+        self.assertEqual(tokens[0].col, indentation_level)  # The record token should start on the specified column
+
+    def test_GIVEN_comment_on_previous_line_WHEN_lexed_THEN_next_line_is_lexed_properly(self):
+        content = """
+        # Hi this is a comment on one line
+        record
+        """
+        tokens = get_tokens_list(Lexer(content))
+
+        expected_tokens = [
+            token_from_type(TokenTypes.RECORD),
+            token_from_type(TokenTypes.EOF),
+        ]
+
+        self.assertListEqual(tokens, expected_tokens)

@@ -8,7 +8,7 @@ from src.db_parser.common import DbSyntaxError
 
 class Token(object):
     """
-    Class representing a lexer token.
+    Class representing a lexer token. Tokens are considered equal if their types are equal.
     Args:
         type: the type of this token. Should be one of TokenTypes
         linenum: the line number this token was found on
@@ -34,7 +34,7 @@ class Token(object):
             return False
 
 
-def escape(var):
+def _escape(var):
     """
     Returns the input variable escaped and wrapped in a regex capture group.
     """
@@ -57,31 +57,33 @@ class Lexer(six.Iterator):
     The regexes are tried in order, the first one that matches get's it's token produced.
     """
     TOKEN_MAPPING = OrderedDict([
-        (escape("record"),
-            TokenTypes.RECORD),
-        (escape("grecord"),
-            TokenTypes.RECORD),
-        (escape("field"),
-            TokenTypes.FIELD),
-        (escape("info"),
-            TokenTypes.INFO),
-        (escape("alias"),
-            TokenTypes.ALIAS),
-        (escape("("),
-            TokenTypes.L_BRACKET),
-        (escape(")"),
-            TokenTypes.R_BRACKET),
-        (escape("{"),
-            TokenTypes.L_BRACE),
-        (escape("}"),
-            TokenTypes.R_BRACE),
-        (escape(","),
-            TokenTypes.COMMA),
-        (r"(\".*?[^\\]\"|\"\")",
+        (_escape("record"),
+         TokenTypes.RECORD),
+        (_escape("grecord"),
+         TokenTypes.RECORD),
+        (_escape("field"),
+         TokenTypes.FIELD),
+        (_escape("info"),
+         TokenTypes.INFO),
+        (_escape("alias"),
+         TokenTypes.ALIAS),
+        (_escape("("),
+         TokenTypes.L_BRACKET),
+        (_escape(")"),
+         TokenTypes.R_BRACKET),
+        (_escape("{"),
+         TokenTypes.L_BRACE),
+        (_escape("}"),
+         TokenTypes.R_BRACE),
+        (_escape(","),
+         TokenTypes.COMMA),
+        (r"(\".*?[^\\]\"|\"\")",  # Ignore escaped quotes within a string. Add special case for empty string
             TokenTypes.QUOTED_STRING),
         (r"(\#.*)",
             TokenTypes.COMMENT),
-        (r"(\$\([^\)]*\))",
+        (r"(\$\([^\)]*\))",  # Macro with brackets $(MACRO=VALUE)
+            TokenTypes.MACRO),
+        (r"(\$\{[^\}]*\})",  # Macro with curly braces ${MACRO=VALUE}
             TokenTypes.MACRO),
         (r"(\s+)",
             TokenTypes.WHITESPACE),
@@ -101,7 +103,6 @@ class Lexer(six.Iterator):
         """
         lines = self.file_contents.split("\n")
         for linenum, line in enumerate(lines, 1):
-            line = line.strip()
             column = 0
             while column < len(line):
                 for regexp in Lexer.TOKEN_MAPPING:
@@ -141,8 +142,5 @@ class Lexer(six.Iterator):
         """
         match = re.match(rx, text)
         if match:
-            try:
-                return match.group(1)
-            except IndexError:
-                return None
+            return match.group(1)
         return None

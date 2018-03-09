@@ -21,7 +21,7 @@ class DbIteratorTests(unittest.TestCase):
             "aliases": [],
         }
 
-    def test_WHEN_two_equal_empty_records_are_compared_THEN_no_differences_found(self):
+    def test_GIVEN_two_equal_empty_records_WHEN_compared_THEN_no_differences_found(self):
         old_record = self._emptyrecord("ai", "$(P)HELLO")
         new_record = self._emptyrecord("ai", "$(P)HELLO")
 
@@ -29,7 +29,7 @@ class DbIteratorTests(unittest.TestCase):
 
         self.assertEqual(len(differences), 0)
 
-    def test_WHEN_field_is_removed_from_record_WHEN_compared_THEN_field_removed_message_in_differences(self):
+    def test_GIVEN_field_is_removed_from_record_WHEN_compared_THEN_field_removed_message_in_differences(self):
         old_record = self._emptyrecord("ai", "$(P)HELLO")
         old_record["fields"].append(("VAL", "TEST_VALUE"))
 

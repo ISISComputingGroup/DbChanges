@@ -40,6 +40,16 @@ class MockLexer(six.Iterator):
     def add_info_field(self, field_name, field_value):
         return self.add_token(TokenTypes.INFO).add_key_value_pair(field_name, field_value)
 
+    def add_alias_field(self, value):
+        return self\
+            .add_token(TokenTypes.ALIAS)\
+            .add_token(TokenTypes.L_BRACKET)\
+            .add_token(TokenTypes.QUOTED_STRING, '"{}"'.format(value))\
+            .add_token(TokenTypes.R_BRACKET)
+
+    def add_alias(self, record_name, alias_name):
+        return self.add_token(TokenTypes.ALIAS).add_key_value_pair(record_name, alias_name)
+
     def add_record_header(self, record_type, record_name):
         return self.add_token(TokenTypes.RECORD).add_key_value_pair(record_type, record_name)
 
@@ -178,7 +188,7 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(parsed_record["infos"], [])
         self.assertEqual(parsed_record["aliases"], [])
 
-    def test_GIVEN_an_empty_record_declaration_containing_a_field_and_an_info_WHEN_parse_record_THEN_parser_can_extract_the_information(self):
+    def test_GIVEN_a_record_declaration_containing_a_field_and_an_info_WHEN_parse_record_THEN_parser_can_extract_the_information(self):
         rec_type, rec_name = "ai", "$(P)TEST"
         field_name, field_val = "PINI", "YES"
         info_name, info_val = "alarm", "TEST_01"
@@ -201,6 +211,51 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(parsed_record["fields"], [(field_name, field_val)])
         self.assertEqual(parsed_record["infos"], [(info_name, info_val)])
         self.assertEqual(parsed_record["aliases"], [])
+
+    def test_GIVEN_a_record_declaration_containing_an_alias_WHEN_parse_record_THEN_parser_can_extract_the_information(self):
+        rec_type, rec_name = "ai", "$(P)TEST"
+        alias_name = "$(P)ALIAS"
+
+        # record(ai, "$(P)TEST") {
+        #     alias("$(P)ALIAS")
+        # }
+        lexer = MockLexer()\
+            .add_record_header(rec_type, rec_name)\
+            .add_token(TokenTypes.L_BRACE)\
+            .add_alias_field(alias_name)\
+            .add_token(TokenTypes.R_BRACE)
+
+        parsed_record = Parser(lexer).record()
+
+        self.assertEqual(parsed_record["name"], rec_name)
+        self.assertEqual(parsed_record["type"], rec_type)
+        self.assertEqual(parsed_record["fields"], [])
+        self.assertEqual(parsed_record["infos"], [])
+        self.assertEqual(parsed_record["aliases"], [alias_name])
+
+    def test_GIVEN_a_record_declaration_with_a_separate_alias_WHEN_parse_record_THEN_parser_can_extract_the_information(self):
+        rec_type, rec_name = "ai", "$(P)TEST"
+        alias_name = "$(P)ALIAS"
+
+        # record(ai, "$(P)TEST") {
+        # }
+        # alias("$(P)TEST", "$(P)ALIAS")
+        lexer = MockLexer()\
+            .add_record_header(rec_type, rec_name)\
+            .add_token(TokenTypes.L_BRACE)\
+            .add_token(TokenTypes.R_BRACE)\
+            .add_alias(rec_name, alias_name)
+
+        parsed_db = Parser(lexer).db()
+
+        self.assertEqual(len(parsed_db), 1)
+        parsed_record = parsed_db[0]
+
+        self.assertEqual(parsed_record["name"], rec_name)
+        self.assertEqual(parsed_record["type"], rec_type)
+        self.assertEqual(parsed_record["fields"], [])
+        self.assertEqual(parsed_record["infos"], [])
+        self.assertEqual(parsed_record["aliases"], [alias_name])
 
     def test_GIVEN_multiple_records_WHEN_parse_as_db_THEN_parser_can_extract_the_information(self):
         rec_type_1 = "ai"
