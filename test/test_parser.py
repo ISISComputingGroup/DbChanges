@@ -284,3 +284,25 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(rec2["type"], rec_type_2)
         self.assertEqual(rec1["name"], rec_name_1)
         self.assertEqual(rec2["name"], rec_name_2)
+
+    def test_GIVEN_multiple_records_with_no_bodies_WHEN_parse_as_db_THEN_parser_can_extract_the_information(self):
+        rec_type_1 = "ai"
+        rec_type_2 = "bi"
+        rec_name_1 = "$(P)TEST1"
+        rec_name_2 = "$(P)TEST2"
+
+        # record(ai, "$(P)TEST1")
+        # record(bi, "$(P)TEST2")
+        lexer = MockLexer()\
+            .add_record_header(rec_type_1, rec_name_1)\
+            .add_record_header(rec_type_2, rec_name_2)\
+
+        parsed_db = Parser(lexer).db()
+
+        self.assertEqual(len(parsed_db), 2)
+        rec1, rec2 = parsed_db
+
+        self.assertEqual(rec1["type"], rec_type_1)
+        self.assertEqual(rec2["type"], rec_type_2)
+        self.assertEqual(rec1["name"], rec_name_1)
+        self.assertEqual(rec2["name"], rec_name_2)

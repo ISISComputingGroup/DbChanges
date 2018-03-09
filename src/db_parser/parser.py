@@ -163,6 +163,10 @@ class Parser(object):
         self.consume(TokenTypes.RECORD)
         record_type, record_name = self.key_value_pair()
 
+        # Special case for records with no body
+        if self.current_token.type != TokenTypes.L_BRACE:
+            return {"type": record_type, "name": record_name, "fields": [], "infos": [], "aliases": []}
+
         with self.brace_delimited_block():
             while self.current_token.type != TokenTypes.R_BRACE:
                 if self.current_token.type == TokenTypes.FIELD:
