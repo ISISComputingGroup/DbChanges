@@ -43,7 +43,7 @@ class DbDifferTests(unittest.TestCase):
         self.assertIn("VAL", differences[0])
         self.assertIn("$(P)HELLO", differences[0])
 
-    def test_WHEN_multiple_fields_are_removed_from_record_WHEN_compared_THEN_get_multiple_difference_messages(self):
+    def test_GIVEN_multiple_fields_are_removed_from_record_WHEN_compared_THEN_get_multiple_difference_messages(self):
         old_record = self._emptyrecord("ai", "$(P)HELLO")
         old_record["fields"].append(("VAL", "TEST_VALUE"))
         old_record["fields"].append(("PINI", "YES"))
@@ -55,7 +55,7 @@ class DbDifferTests(unittest.TestCase):
 
         self.assertEqual(len(differences), 3)
 
-    def test_WHEN_field_in_record_is_changed_WHEN_compared_THEN_field_changed_message_in_differences(self):
+    def test_GIVEN_field_in_record_is_changed_WHEN_compared_THEN_field_changed_message_in_differences(self):
         old_record = self._emptyrecord("ai", "$(P)HELLO")
         old_record["fields"].append(("VAL", "TEST_VALUE"))
 
