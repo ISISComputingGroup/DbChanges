@@ -144,7 +144,7 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(parsed_key, key)
         self.assertEqual(parsed_value, value)
 
-    def test_GIVEN_a_bracketed_key_value_pair_where_comma_is_missing_WHEN_parse_key_value_pair_THEN_can_extract_key_and_value(self):
+    def test_GIVEN_a_bracketed_key_value_pair_where_comma_is_missing_WHEN_parse_key_value_pair_THEN_raises_error(self):
         key, value = "Key", "Value"
 
         # (KEY VALUE)
