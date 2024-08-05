@@ -64,8 +64,9 @@ class DbChangesIterator(object):
         """
         for db in self.dbs_in_old_path():
             if os.path.exists(os.path.join(self.new_path, db)):
-                with open(os.path.join(self.old_path, db)) as old_file, \
-                        open(os.path.join(self.new_path, db)) as new_file:
+                with open(os.path.join(self.old_path, db)) as old_file, open(
+                    os.path.join(self.new_path, db)
+                ) as new_file:
                     if old_file.readlines() != new_file.readlines():
                         yield db
 
