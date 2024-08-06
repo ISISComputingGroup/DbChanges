@@ -5,7 +5,6 @@ from src.db_diff import DbDiffer
 
 
 class DbDifferTests(unittest.TestCase):
-
     def setUp(self):
         self.db_change_iterator = DbDiffer(
             os.path.join(os.path.dirname(__file__), "test_data", "old"),
@@ -29,7 +28,9 @@ class DbDifferTests(unittest.TestCase):
 
         self.assertEqual(len(differences), 0)
 
-    def test_GIVEN_field_is_removed_from_record_WHEN_compared_THEN_field_removed_message_in_differences(self):
+    def test_GIVEN_field_is_removed_from_record_WHEN_compared_THEN_field_removed_message_in_differences(
+        self,
+    ):
         old_record = self._emptyrecord("ai", "$(P)HELLO")
         old_record["fields"].append(("VAL", "TEST_VALUE"))
 
@@ -43,7 +44,9 @@ class DbDifferTests(unittest.TestCase):
         self.assertIn("VAL", differences[0])
         self.assertIn("$(P)HELLO", differences[0])
 
-    def test_GIVEN_multiple_fields_are_removed_from_record_WHEN_compared_THEN_get_multiple_difference_messages(self):
+    def test_GIVEN_multiple_fields_are_removed_from_record_WHEN_compared_THEN_get_multiple_difference_messages(
+        self,
+    ):
         old_record = self._emptyrecord("ai", "$(P)HELLO")
         old_record["fields"].append(("VAL", "TEST_VALUE"))
         old_record["fields"].append(("PINI", "YES"))
@@ -55,7 +58,9 @@ class DbDifferTests(unittest.TestCase):
 
         self.assertEqual(len(differences), 3)
 
-    def test_GIVEN_field_in_record_is_changed_WHEN_compared_THEN_field_changed_message_in_differences(self):
+    def test_GIVEN_field_in_record_is_changed_WHEN_compared_THEN_field_changed_message_in_differences(
+        self,
+    ):
         old_record = self._emptyrecord("ai", "$(P)HELLO")
         old_record["fields"].append(("VAL", "TEST_VALUE"))
 
@@ -72,8 +77,9 @@ class DbDifferTests(unittest.TestCase):
         self.assertIn("TEST_VALUE", differences[0])
         self.assertIn("NEW_TEST_VALUE", differences[0])
 
-    def test_GIVEN_record_removed_from_db_WHEN_compare_dbs_THEN_record_removed_message_in_changes(self):
-
+    def test_GIVEN_record_removed_from_db_WHEN_compare_dbs_THEN_record_removed_message_in_changes(
+        self,
+    ):
         differences = self.db_change_iterator.diff_dbs([self._emptyrecord("ai", "$(P)HELLO")], [])
 
         self.assertEqual(len(differences), 1)

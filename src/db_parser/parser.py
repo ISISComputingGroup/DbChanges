@@ -1,13 +1,14 @@
 from contextlib import contextmanager
 
-from src.db_parser.tokens import TokenTypes
 from src.db_parser.common import DbSyntaxError
+from src.db_parser.tokens import TokenTypes
 
 
 class Parser(object):
     """
     Main db_parser. Takes input tokens from the given lexer and builds an EPICS DB out of them.
     """
+
     def __init__(self, lexer):
         self.lexer = lexer
         self.current_token = None
@@ -45,8 +46,11 @@ class Parser(object):
         if self.current_token is None:
             raise DbSyntaxError("No tokens found.")
         else:
-            raise DbSyntaxError("Unexpected token '{}' encountered at {}:{}: {}"
-                                .format(self.current_token, self.current_token.line, self.current_token.col, message))
+            raise DbSyntaxError(
+                "Unexpected token '{}' encountered at {}:{}: {}".format(
+                    self.current_token, self.current_token.line, self.current_token.col, message
+                )
+            )
 
     @contextmanager
     def delimited_block(self, start, end):
@@ -164,7 +168,13 @@ class Parser(object):
 
         # Special case for records with no body
         if self.current_token.type != TokenTypes.L_BRACE:
-            return {"type": record_type, "name": record_name, "fields": [], "infos": [], "aliases": []}
+            return {
+                "type": record_type,
+                "name": record_name,
+                "fields": [],
+                "infos": [],
+                "aliases": [],
+            }
 
         with self.brace_delimited_block():
             while self.current_token.type != TokenTypes.R_BRACE:
@@ -177,7 +187,13 @@ class Parser(object):
                 else:
                     self.raise_error("Expected info, field or alias")
 
-        return {"type": record_type, "name": record_name, "fields": fields, "infos": infos, "aliases": aliases}
+        return {
+            "type": record_type,
+            "name": record_name,
+            "fields": fields,
+            "infos": infos,
+            "aliases": aliases,
+        }
 
     def alias(self):
         """

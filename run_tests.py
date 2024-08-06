@@ -1,8 +1,8 @@
 import os
-import unittest
 import sys
-import xmlrunner
+import unittest
 
+import xmlrunner
 
 if __name__ == "__main__":
     suite = unittest.TestLoader().discover(os.path.dirname(os.path.abspath(__file__)))

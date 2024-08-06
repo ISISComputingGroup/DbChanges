@@ -1,8 +1,8 @@
 import re
 from collections import OrderedDict
 
-from src.db_parser.tokens import TokenTypes
 from src.db_parser.common import DbSyntaxError
+from src.db_parser.tokens import TokenTypes
 
 
 class Token(object):
@@ -14,6 +14,7 @@ class Token(object):
         colnum: the column number this token was found on
         contents: the original text that this token was parsed from
     """
+
     def __init__(self, type, linenum, colnum, contents=None):
         self.type = type
         self.contents = contents
@@ -40,7 +41,7 @@ def _escape(var):
     return "({})".format(re.escape(var))
 
 
-class Lexer():
+class Lexer:
     """
     Lexer, tokenises the database file into
     """
@@ -55,40 +56,38 @@ class Lexer():
 
     The regexes are tried in order, the first one that matches get's it's token produced.
     """
-    TOKEN_MAPPING = OrderedDict([
-        (_escape("record"),
-         TokenTypes.RECORD),
-        (_escape("grecord"),
-         TokenTypes.RECORD),
-        (_escape("field"),
-         TokenTypes.FIELD),
-        (_escape("info"),
-         TokenTypes.INFO),
-        (_escape("alias"),
-         TokenTypes.ALIAS),
-        (_escape("("),
-         TokenTypes.L_BRACKET),
-        (_escape(")"),
-         TokenTypes.R_BRACKET),
-        (_escape("{"),
-         TokenTypes.L_BRACE),
-        (_escape("}"),
-         TokenTypes.R_BRACE),
-        (_escape(","),
-         TokenTypes.COMMA),
-        (r"(\".*?[^\\]\"|\"\")",  # Ignore escaped quotes within a string. Add special case for empty string
-            TokenTypes.QUOTED_STRING),
-        (r"(\#.*)",
-            TokenTypes.COMMENT),
-        (r"(\$\([^\)]*\))",  # Macro with brackets $(MACRO=VALUE)
-            TokenTypes.MACRO),
-        (r"(\$\{[^\}]*\})",  # Macro with curly braces ${MACRO=VALUE}
-            TokenTypes.MACRO),
-        (r"(\s+)",
-            TokenTypes.WHITESPACE),
-        (r"([a-zA-Z0-9\-\_\.\:]+)",  # Alphanumeric, -, _, ., :
-            TokenTypes.LITERAL),
-    ])
+    TOKEN_MAPPING = OrderedDict(
+        [
+            (_escape("record"), TokenTypes.RECORD),
+            (_escape("grecord"), TokenTypes.RECORD),
+            (_escape("field"), TokenTypes.FIELD),
+            (_escape("info"), TokenTypes.INFO),
+            (_escape("alias"), TokenTypes.ALIAS),
+            (_escape("("), TokenTypes.L_BRACKET),
+            (_escape(")"), TokenTypes.R_BRACKET),
+            (_escape("{"), TokenTypes.L_BRACE),
+            (_escape("}"), TokenTypes.R_BRACE),
+            (_escape(","), TokenTypes.COMMA),
+            (
+                r"(\".*?[^\\]\"|\"\")",  # Ignore escaped quotes within a string. Add special case for empty string
+                TokenTypes.QUOTED_STRING,
+            ),
+            (r"(\#.*)", TokenTypes.COMMENT),
+            (
+                r"(\$\([^\)]*\))",  # Macro with brackets $(MACRO=VALUE)
+                TokenTypes.MACRO,
+            ),
+            (
+                r"(\$\{[^\}]*\})",  # Macro with curly braces ${MACRO=VALUE}
+                TokenTypes.MACRO,
+            ),
+            (r"(\s+)", TokenTypes.WHITESPACE),
+            (
+                r"([a-zA-Z0-9\-\_\.\:]+)",  # Alphanumeric, -, _, ., :
+                TokenTypes.LITERAL,
+            ),
+        ]
+    )
 
     def __init__(self, file_contents):
         self.file_contents = file_contents
@@ -111,10 +110,13 @@ class Lexer():
                         column += len(match_text)
                         break
                 else:
-                    raise DbSyntaxError("No matching rules found at {}:{}. Line contents: '{}'"
-                                        .format(linenum, column, line))
+                    raise DbSyntaxError(
+                        "No matching rules found at {}:{}. Line contents: '{}'".format(
+                            linenum, column, line
+                        )
+                    )
 
-        yield Token(TokenTypes.EOF, len(lines), len(lines[len(lines)-1]))
+        yield Token(TokenTypes.EOF, len(lines), len(lines[len(lines) - 1]))
 
     def __next__(self):
         """
